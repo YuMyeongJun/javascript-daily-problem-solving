@@ -176,16 +176,34 @@ export class ProblemsService {
     };
   }
 
-  getProblemByDate(date: string): Problem | null {
+  getProblemByDate(
+    date: string,
+  ): (Omit<Problem, 'solution'> & { solved?: boolean; solvedAt?: string }) | null {
     const problem = this.getProblemForDate(date);
+    const submission = this.submissions.get(date);
 
     // solution은 제거하고 반환
     const { solution, ...problemWithoutSolution } = problem;
-    return problemWithoutSolution as Problem;
+    return {
+      ...problemWithoutSolution,
+      solved: submission?.solved || false,
+      solvedAt: submission?.solvedAt,
+    };
   }
 
   submitSolution(date: string, code: string) {
     const problem = this.getProblemForDate(date);
+    
+    // 이미 완료된 문제인지 확인
+    const existingSubmission = this.submissions.get(date);
+    if (existingSubmission?.solved) {
+      return {
+        success: false,
+        message: '이미 오늘의 문제를 완료하셨습니다. 내일 새로운 문제로 다시 도전해보세요! 🎯',
+        alreadyCompleted: true,
+        solvedAt: existingSubmission.solvedAt,
+      };
+    }
     
     try {
       // 코드 실행 환경 생성
@@ -204,14 +222,16 @@ export class ProblemsService {
       return {
         success: allPassed,
         message: allPassed
-          ? '모든 테스트를 통과했습니다! 🎉'
-          : '일부 테스트를 통과하지 못했습니다.',
+          ? '모든 테스트를 통과했습니다! 🎉 오늘의 문제를 완료하셨습니다!'
+          : '일부 테스트를 통과하지 못했습니다. 코드를 다시 확인해보세요.',
         testResults,
+        alreadyCompleted: false,
       };
     } catch (error: any) {
       return {
         success: false,
         message: `코드 실행 중 오류가 발생했습니다: ${error.message}`,
+        alreadyCompleted: false,
       };
     }
   }

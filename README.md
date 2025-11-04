@@ -14,6 +14,7 @@ javascript-daily-problem-solving/
 ## 기술 스택
 
 ### Frontend
+
 - React 19
 - TypeScript
 - Vite
@@ -23,6 +24,7 @@ javascript-daily-problem-solving/
 - date-fns
 
 ### Backend
+
 - NestJS
 - TypeScript
 - VM2 (코드 실행 환경)
@@ -30,6 +32,7 @@ javascript-daily-problem-solving/
 ## 시작하기
 
 ### 1. Frontend 실행
+
 ```bash
 cd frontend
 npm install
@@ -39,6 +42,7 @@ npm run dev
 Frontend는 `http://localhost:5173`에서 실행됩니다.
 
 ### 2. Backend 실행
+
 ```bash
 cd backend
 npm install
@@ -80,4 +84,3 @@ Backend는 `http://localhost:3000`에서 실행됩니다.
 - **Frontend**: React + TypeScript로 구성된 SPA
 - **Backend**: NestJS로 구성된 RESTful API
 - **코드 실행**: VM2를 사용한 안전한 코드 실행 환경
-

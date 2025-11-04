@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { ProblemsService } from './problems.service';
 import { SubmitSolutionDto } from './dto/submit-solution.dto';
-import { Problem } from './problems.service';
 
 @Controller('api/problems')
 export class ProblemsController {
@@ -13,7 +12,7 @@ export class ProblemsController {
   }
 
   @Get(':date')
-  getProblemByDate(@Param('date') date: string): Problem | null {
+  getProblemByDate(@Param('date') date: string) {
     return this.problemsService.getProblemByDate(date);
   }
 

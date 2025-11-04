@@ -12,11 +12,15 @@ interface Problem {
     input: string
     expectedOutput: string
   }>
+  solved?: boolean
+  solvedAt?: string
 }
 
 interface SubmissionResult {
   success: boolean
   message: string
+  alreadyCompleted?: boolean
+  solvedAt?: string
   testResults?: Array<{
     passed: boolean
     input: string
@@ -47,6 +51,16 @@ export default function Problem() {
       const response = await axios.get(`${API_URL}/problems/${problemDate}`)
       setProblem(response.data)
       setCode(response.data.starterCode || '')
+      
+      // 이미 완료된 문제인 경우 완료 메시지 표시
+      if (response.data.solved) {
+        setResult({
+          success: true,
+          message: `이미 오늘의 문제를 완료하셨습니다! 🎉\n완료 시간: ${response.data.solvedAt ? new Date(response.data.solvedAt).toLocaleString('ko-KR') : ''}`,
+          alreadyCompleted: true,
+          solvedAt: response.data.solvedAt,
+        })
+      }
     } catch (error) {
       console.error('문제를 불러오는데 실패했습니다:', error)
     } finally {
@@ -55,7 +69,7 @@ export default function Problem() {
   }
 
   const handleSubmit = async () => {
-    if (!problem || !code.trim()) return
+    if (!problem || !code.trim() || problem.solved) return
 
     setSubmitting(true)
     setResult(null)
@@ -67,6 +81,8 @@ export default function Problem() {
       setResult(response.data)
 
       if (response.data.success) {
+        // 문제 완료 상태 업데이트
+        setProblem({ ...problem, solved: true, solvedAt: new Date().toISOString() })
         setTimeout(() => {
           navigate('/')
         }, 2000)
@@ -75,6 +91,7 @@ export default function Problem() {
       setResult({
         success: false,
         message: error.response?.data?.message || '제출 중 오류가 발생했습니다.',
+        alreadyCompleted: error.response?.data?.alreadyCompleted || false,
       })
     } finally {
       setSubmitting(false)
@@ -165,15 +182,32 @@ export default function Problem() {
             />
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || !code.trim()}
-            className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
-          >
-            {submitting ? '제출 중...' : '제출하기'}
-          </button>
+          {problem.solved ? (
+            <div className="bg-green-900/20 border border-green-700 rounded-lg p-6 text-center">
+              <div className="text-green-400 text-xl mb-2">✅ 완료</div>
+              <p className="text-slate-300 text-sm">
+                오늘의 문제를 이미 완료하셨습니다!
+                {problem.solvedAt && (
+                  <span className="block mt-1 text-slate-400">
+                    완료 시간: {new Date(problem.solvedAt).toLocaleString('ko-KR')}
+                  </span>
+                )}
+              </p>
+              <p className="text-slate-400 text-xs mt-2">
+                내일 새로운 문제로 다시 도전해보세요! 🎯
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !code.trim()}
+              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
+            >
+              {submitting ? '제출 중...' : '제출하기'}
+            </button>
+          )}
 
-          {result && (
+          {result && !result.alreadyCompleted && (
             <div
               className={`rounded-lg border p-6 ${
                 result.success
