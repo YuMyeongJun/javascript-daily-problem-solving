@@ -28,5 +28,9 @@ export class ProblemsController {
   getHistory() {
     return this.problemsService.getHistory();
   }
-}
 
+  @Get('statistics')
+  getStatistics() {
+    return this.problemsService.getStatistics();
+  }
+}

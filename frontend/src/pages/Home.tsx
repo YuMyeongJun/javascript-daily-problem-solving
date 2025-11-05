@@ -12,14 +12,26 @@ interface DailyProblem {
   solved: boolean
 }
 
+interface Statistics {
+  weeklyProgress: number
+  streak: number
+  totalSolved: number
+}
+
 const API_URL = 'http://localhost:3000/api'
 
 export default function Home() {
   const [problem, setProblem] = useState<DailyProblem | null>(null)
+  const [statistics, setStatistics] = useState<Statistics>({
+    weeklyProgress: 0,
+    streak: 0,
+    totalSolved: 0,
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchTodayProblem()
+    fetchStatistics()
   }, [])
 
   const fetchTodayProblem = async () => {
@@ -30,6 +42,15 @@ export default function Home() {
       console.error('문제를 불러오는데 실패했습니다:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/problems/statistics`)
+      setStatistics(response.data)
+    } catch (error) {
+      console.error('통계를 불러오는데 실패했습니다:', error)
     }
   }
 
@@ -107,17 +128,17 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
         <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
           <h3 className="text-lg font-semibold mb-2">📊 진행률</h3>
-          <p className="text-3xl font-bold text-primary-400">0%</p>
+          <p className="text-3xl font-bold text-primary-400">{statistics.weeklyProgress}%</p>
           <p className="text-slate-400 text-sm mt-1">이번 주 완료</p>
         </div>
         <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
           <h3 className="text-lg font-semibold mb-2">🔥 연속</h3>
-          <p className="text-3xl font-bold text-primary-400">0일</p>
+          <p className="text-3xl font-bold text-primary-400">{statistics.streak}일</p>
           <p className="text-slate-400 text-sm mt-1">연속 학습</p>
         </div>
         <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
           <h3 className="text-lg font-semibold mb-2">🎯 총 문제</h3>
-          <p className="text-3xl font-bold text-primary-400">0개</p>
+          <p className="text-3xl font-bold text-primary-400">{statistics.totalSolved}개</p>
           <p className="text-slate-400 text-sm mt-1">해결한 문제</p>
         </div>
       </div>

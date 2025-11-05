@@ -178,7 +178,9 @@ export class ProblemsService {
 
   getProblemByDate(
     date: string,
-  ): (Omit<Problem, 'solution'> & { solved?: boolean; solvedAt?: string }) | null {
+  ):
+    | (Omit<Problem, 'solution'> & { solved?: boolean; solvedAt?: string })
+    | null {
     const problem = this.getProblemForDate(date);
     const submission = this.submissions.get(date);
 
@@ -193,21 +195,26 @@ export class ProblemsService {
 
   submitSolution(date: string, code: string) {
     const problem = this.getProblemForDate(date);
-    
+
     // 이미 완료된 문제인지 확인
     const existingSubmission = this.submissions.get(date);
     if (existingSubmission?.solved) {
       return {
         success: false,
-        message: '이미 오늘의 문제를 완료하셨습니다. 내일 새로운 문제로 다시 도전해보세요! 🎯',
+        message:
+          '이미 오늘의 문제를 완료하셨습니다. 내일 새로운 문제로 다시 도전해보세요! 🎯',
         alreadyCompleted: true,
         solvedAt: existingSubmission.solvedAt,
       };
     }
-    
+
     try {
       // 코드 실행 환경 생성
-      const testResults = this.runTests(code, problem.testCases, problem.solution);
+      const testResults = this.runTests(
+        code,
+        problem.testCases,
+        problem.solution,
+      );
 
       const allPassed = testResults.every((result) => result.passed);
 
@@ -240,10 +247,20 @@ export class ProblemsService {
     userCode: string,
     testCases: Array<{ input: string; expectedOutput: string }>,
     solutionCode: string,
-  ): Array<{ passed: boolean; input: string; expected: string; output: string }> {
-    const results: Array<{ passed: boolean; input: string; expected: string; output: string }> = [];
+  ): Array<{
+    passed: boolean;
+    input: string;
+    expected: string;
+    output: string;
+  }> {
+    const results: Array<{
+      passed: boolean;
+      input: string;
+      expected: string;
+      output: string;
+    }> = [];
     const funcMatch = userCode.match(/function\s+(\w+)\s*\(/);
-    
+
     if (!funcMatch) {
       // 함수 정의가 없으면 모든 테스트 실패
       for (const testCase of testCases) {
@@ -251,7 +268,8 @@ export class ProblemsService {
           passed: false,
           input: testCase.input,
           expected: testCase.expectedOutput,
-          output: '함수 정의를 찾을 수 없습니다. function 함수명() 형식으로 작성해주세요.',
+          output:
+            '함수 정의를 찾을 수 없습니다. function 함수명() 형식으로 작성해주세요.',
         });
       }
       return results;
@@ -314,8 +332,8 @@ export class ProblemsService {
   private parseInput(input: string): any[] {
     try {
       // 쉼표로 구분된 값들을 파싱
-      const values = input.split(',').map(v => v.trim());
-      return values.map(v => {
+      const values = input.split(',').map((v) => v.trim());
+      return values.map((v) => {
         // 숫자로 변환 가능한지 확인
         if (!isNaN(Number(v))) {
           return Number(v);
@@ -380,7 +398,7 @@ export class ProblemsService {
       solvedAt?: string;
     }> = [];
     const today = this.getTodayDate();
-    
+
     // 최근 30일 문제 생성
     for (let i = 0; i < 30; i++) {
       const date = this.getDateString(
@@ -388,7 +406,7 @@ export class ProblemsService {
       );
       const problem = this.getProblemForDate(date);
       const submission = this.submissions.get(date);
-      
+
       history.push({
         date: problem.date,
         title: problem.title,
@@ -414,5 +432,69 @@ export class ProblemsService {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
-}
 
+  getStatistics(): {
+    weeklyProgress: number;
+    streak: number;
+    totalSolved: number;
+  } {
+    const today = this.getTodayDate();
+    const todayDate = new Date(today);
+
+    // 이번 주 시작일 계산 (월요일 기준)
+    const dayOfWeek = todayDate.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const weekStartDate = new Date(todayDate);
+    weekStartDate.setDate(todayDate.getDate() - daysToMonday);
+
+    // 이번 주 문제 수 계산
+    let weeklyTotal = 0;
+    let weeklySolved = 0;
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStartDate);
+      date.setDate(weekStartDate.getDate() + i);
+      const dateStr = this.getDateString(date);
+
+      // 오늘 이후의 날짜는 제외
+      if (new Date(dateStr) > new Date(today)) {
+        break;
+      }
+
+      weeklyTotal++;
+      const submission = this.submissions.get(dateStr);
+      if (submission?.solved) {
+        weeklySolved++;
+      }
+    }
+
+    const weeklyProgress =
+      weeklyTotal > 0 ? Math.round((weeklySolved / weeklyTotal) * 100) : 0;
+
+    // 연속 학습일수 계산
+    let streak = 0;
+    const checkDate = new Date(today);
+
+    while (true) {
+      const dateStr = this.getDateString(checkDate);
+      const submission = this.submissions.get(dateStr);
+
+      if (submission?.solved) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    // 총 해결한 문제 수
+    const totalSolved = Array.from(this.submissions.values()).filter(
+      (submission) => submission.solved,
+    ).length;
+
+    return {
+      weeklyProgress,
+      streak,
+      totalSolved,
+    };
+  }
+}
